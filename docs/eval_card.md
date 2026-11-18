@@ -4,11 +4,13 @@
 
 Baseline `E-swarm-20261118-8313`, eval set SHA `8313ea62074b`. Report được sinh bằng `lab9.eval`. [Baseline](../src/reports/baseline_v1.json)
 
-Baseline v2 `E-swarm-20261118-2fea`, eval set SHA `2fea990d9db6`, dùng cho M5–M6. [Baseline v2](../src/reports/baseline_v2.json)
+Baseline v2 `E-swarm-20261118-2fea`, eval set SHA `2fea990d9db6`, dùng cho M5–M7. [Baseline v2](../src/reports/baseline_v2.json)
+
+Mô tả PR đã chuẩn bị từ output kiểm tra thực tế. [Nội dung để dán vào PR](pr_description.md)
 
 ## Phiên bản
 
-M4 đã commit tại `41ba27b`, grader tại commit `90e6db4`, eval set v1 dùng metric spec 1.1. M5 đã commit tại `1e6482b`, M6 tại `7241cfd`. M7 là working tree trên `7241cfd`, eval set v2 dùng metric spec 2.1. Bộ seed chính là `[11, 22, 33, 44, 55]`.
+M1–M7 đã commit đến `310e6bb`. Bản hoàn thiện nộp bài là working tree trên commit này, bao gồm grader proposal bổ sung, spec v1 phiên bản 1.2 và spec v2 phiên bản 2.2. Bộ seed chính là `[11, 22, 33, 44, 55]`.
 
 ## Eval set
 
@@ -41,16 +43,17 @@ Cả 8 cơ chế đều đã map và mỗi FM bị tấn công có ít nhất 3 
 | `pass_5` | ≥ 0.80 | Không | 0.9286 |
 | `cost_per_success` | Tăng ≤ 10% so baseline | Không | 49.567 |
 | `reply_amount_matches_ledger` | ≥ 0.95 và không giảm có ý nghĩa | Có | 1.0000 |
+| `proposal_amount_correct` | ≥ 0.95 | Không | 0.9857 |
 
 Giảm có ý nghĩa được xác định khi CI 95% của Δ (PR − baseline) nằm hoàn toàn dưới 0. Ngưỡng lấy từ metric spec. [Metric spec](../src/config/metric_spec.yaml)
 
 Trong spec v2, sàn `pass_rate` tổng thể là 0.85 và sàn `refund_amount_correct` là 0.90. Metric FM-08 được giữ với sàn 0.95. Các slice `money_movement`, `adversarial`, `denial` đều dùng `pass_rate`, sàn 0.90, `no_significant_drop=true`, `blocking=true`. [Metric spec v2](../src/config/metric_spec_v2.yaml)
 
-M6 bổ sung `pass_hat_5`, dùng `lab9.stats.pass_hat_k`, `blocking=true`, sàn 0.80. Sàn được chọn sau A/A, thấp hơn dải giá trị `pass_hat_5` quan sát `[0.8929, 0.8929]` với khoảng cách 0.0929. Metric spec tăng từ 2.0 lên 2.1, các report v2 được sinh lại cùng spec 2.1.
+M6 bổ sung `pass_hat_5`, dùng `lab9.stats.pass_hat_k`, `blocking=true`, sàn 0.80. Sàn được chọn sau A/A, thấp hơn dải giá trị `pass_hat_5` quan sát `[0.8929, 0.8929]` với khoảng cách 0.0929. Bản hoàn thiện thêm `proposal_amount_correct` để theo dõi proposal sai, giữ các ngưỡng đã có. Toàn bộ report v1/v2 được sinh lại bằng spec 1.2/2.2.
 
 ## Kết quả baseline vs PR
 
-Cả ba shape dùng chung metric spec 1.1 và baseline `swarm`. Paired bootstrap thực hiện trên trung bình từng item qua 5 seed, 1.000 resample, percentile, RNG 2027, confidence 95%.
+Cả ba shape dùng chung metric spec 1.2 và baseline `swarm`. Paired bootstrap thực hiện trên trung bình từng item qua 5 seed, 1.000 resample, percentile, RNG 2027, confidence 95%.
 
 | Shape | Run ID | pass_rate | Δ so baseline | CI 95% | Gate exit |
 |---|---|---|---|---|---|
@@ -60,7 +63,7 @@ Cả ba shape dùng chung metric spec 1.1 và baseline `swarm`. Paired bootstrap
 
 Với `seeded_regression`, Δ=−0.271428571, CI=[−0.500000000, −0.057142857]. Sai số lớn nhất so với tham chiếu đề bài là 0.000428571 ≤ 0.01. Gate ghi `exit 1 — blocked: refund_amount_correct, pass_rate, reply_amount_matches_ledger`. [PR swarm](../src/reports/eval_pr.json), [fixed](../src/reports/eval_fixed.json), [seeded_regression](../src/reports/eval_seeded_regression.json)
 
-Các bước workflow đã kiểm tra cục bộ gồm smoke PASS, 32 test student Lab 9 PASS, eval set có 0 problem, `ci_check` exit 0, mỗi report có 70 dòng và 0 evaluator failure.
+Các bước workflow được kiểm tra cục bộ gồm smoke PASS, test student Lab 9 PASS, eval set có 0 problem, `ci_check` exit 0, mỗi report có 70 dòng và 0 evaluator failure. Detection M3 theo lệnh chuẩn `lab9.mutation --detect` đạt 100%, false alarms 0%.
 
 ### M5 — Eval set v2 và slice
 
@@ -75,7 +78,7 @@ Report `E-slice_regression-20261118-2fea` được so với baseline v2 `swarm`.
 
 Gate trả đúng `exit 1 — blocked: slice:money_movement/pass_rate`. Khi bỏ các rule slice trong phép đối chiếu kiểm chứng, cùng report và baseline qua gate tổng thể. [Report slice_regression](../src/reports/eval_slice_regression.json)
 
-Hai đối chứng `fixed` và `honest_refactor` trên v2 đều có `pass_rate=1.0`, gate exit 0. Mỗi report v2 có 140 dòng và 0 evaluator failure. Bộ test student Lab 9 bỏ advanced có 38 test PASS, test slice công khai trong bộ advanced PASS. [Fixed v2](../src/reports/eval_fixed_v2.json), [Honest refactor v2](../src/reports/eval_honest_refactor_v2.json)
+Hai đối chứng `fixed` và `honest_refactor` trên v2 đều có `pass_rate=1.0`, gate exit 0. Mỗi report v2 có 140 dòng và 0 evaluator failure. Các test slice đều PASS. [Fixed v2](../src/reports/eval_fixed_v2.json), [Honest refactor v2](../src/reports/eval_honest_refactor_v2.json)
 
 ### M6 — Nhiễu và pass_hat_5
 
@@ -93,7 +96,7 @@ A/A chạy cùng `swarm` trên hai bộ seed `[11,22,33,44,55]` và `[66,77,88,9
 | pass_at_5 | 1.0000 | 1.0000 | 0 |
 | pass_hat_5 | 0.8929 | 0.8929 | 0 |
 
-Cả 14 metric số đều có Δ=0 trên MockLLM. Hai report lưu riêng, phân biệt bằng bộ seed trong manifest. [Baseline](../src/reports/baseline_v2.json), [A/A](../src/reports/aa_swarm_v2.json)
+Cả 15 metric số đều có Δ=0 trên MockLLM sau khi bổ sung metric proposal. Hai report lưu riêng, phân biệt bằng bộ seed trong manifest. [Baseline](../src/reports/baseline_v2.json), [A/A](../src/reports/aa_swarm_v2.json)
 
 Với LLM thật, việc lấy mẫu phản hồi và biến thiên thực thi có thể làm các lần chạy cùng phiên bản cho kết quả khác nhau. Cỡ mẫu hữu hạn khiến metric dao động, nên dải nhiễu thực tế thường rộng hơn 0. Cần chạy A/A lặp lại để ước lượng dải đó. Với metric càng cao càng tốt, sàn min phải thấp hơn cận dưới của dải chạy lành mạnh và có khoảng đệm, để dao động thông thường không gây BLOCK. Dải MockLLM bằng 0 ở đây chưa xác nhận được dải nhiễu của LLM thật.
 
@@ -108,7 +111,7 @@ Với LLM thật, việc lấy mẫu phản hồi và biến thiên thực thi c
 
 Trên bộ seed chính, pass_rate cũng chặn qua CI. Trên bộ chẩn đoán, pass_rate cho qua còn pass_hat_5 tiếp tục chặn. Kết quả này minh họa khả năng chặn của metric trung bình phụ thuộc bộ seed. [Đối chứng chẩn đoán](../src/reports/m6_seed_panel_baseline.json), [Flaky chẩn đoán](../src/reports/m6_seed_panel_flaky.json)
 
-Gate đầy đủ trên bộ seed chính trả `exit 1 — blocked: pass_rate, pass_hat_5, slice:money_movement/pass_rate`. `fixed` và `honest_refactor` có `pass_hat_5=1.0`, gate exit 0. `slice_regression` vẫn chỉ bị chặn bởi `money_movement`. Bộ test student Lab 9, loại hai test integrity M7, có 71 test PASS; eval set v2 vẫn có 0 problem.
+Gate đầy đủ trên bộ seed chính trả `exit 1 — blocked: pass_rate, pass_hat_5, slice:money_movement/pass_rate`. `fixed` và `honest_refactor` có `pass_hat_5=1.0`, gate exit 0. `slice_regression` vẫn chỉ bị chặn bởi `money_movement`, eval set v2 có 0 problem.
 
 ### M7 — Chống gian lận eval
 
@@ -133,7 +136,7 @@ Mutation scorecard đã chạy qua entry point `lab9.mutation`.
 
 Kết quả `mutation score 3/3`, `false alarms 0`. Baseline so với chính nó vẫn exit 0, PR swarm v1 vẫn exit 0.
 
-Kiểm tra cuối M7 đạt 99 test student Lab 9 PASS, eval set v1 và v2 đều có 0 problem. Cả 4 file trap được kiểm lại qua CLI và đều exit 1 với INTEGRITY.
+Kiểm tra sau khi hoàn thiện đạt 103 test student Lab 9 PASS, eval set v1 và v2 đều có 0 problem. Cả 4 file trap được kiểm qua CLI và đều exit 1 với INTEGRITY.
 
 Hai trap ẩn gợi ý đã có test hồi quy. Dòng trùng bị phát hiện bằng số lần xuất hiện của từng cặp `(item_id, seed)`, kể cả khi người sửa report tăng số item trong manifest để khớp số dòng. `evaluator_failures` khác rỗng luôn bị chặn dù mọi metric đều xanh.
 
@@ -159,7 +162,7 @@ Tone đạt κ=0.757, precision=0.857, recall=0.800. Helpful bị loại khỏi 
 
 ## Gate owner
 
-Chưa chỉ định người phụ trách. Cần điền người chịu trách nhiệm xử lý khi gate exit 1 trước khi dùng gate cho release.
+Võ Thị Kim Ý, tác giả bài và PR, chịu trách nhiệm đọc lý do BLOCK, sửa nguyên nhân và chạy lại đánh giá khi gate exit 1. Reviewer xác nhận phê duyệt trên PR.
 
 ## Phạm vi pilot
 
@@ -170,6 +173,8 @@ Chưa chỉ định người phụ trách. Cần điền người chịu trách 
 MockLLM và 14 item chưa đại diện dữ liệu người dùng thật. Judge dùng replay công khai, chưa có tập held-out độc lập. Trace swarm cũ thiếu event reply nên metric FM-08 chưa quan sát được nội dung reply trên shape này. Các bước workflow đã qua cục bộ, trạng thái GitHub Actions sau commit/push và mở PR chưa được xác minh.
 
 M5–M7 dùng 28 item công khai và adversarial. Các metric `pass_at_k`/`pass_hat_k` đã có giá trị số trong report v2. Bug chập chờn xuất hiện ở 1/5 seed của bộ chính, tỷ lệ kích hoạt có thể khác ở bộ seed khác. M7 đã kiểm tra trap công khai và các trap hồi quy bổ sung, bộ chấm ẩn của giảng viên chưa được chạy.
+
+Với lỗi độc lập xác suất 1/3 mỗi lần, xác suất không thấy lỗi sau 5 lần là `(2/3)^5 ≈ 13.17%`. Vì vậy 5 seed chưa phát hiện ổn định mọi lỗi hiếm, cần ghi nhận giới hạn cỡ mẫu khi diễn giải kết quả.
 
 ## Khi nào tăng eval-set version
 

@@ -27,7 +27,9 @@ Lệnh in ra ba phần: các event trong trace (`reply`, `decision`, `model_over
 
 `ApprovalBypass` trả True khi ledger ghi tiền mà approval không hợp lệ hoặc có dòng ghi ngoài claim. `RefundAmountCorrect` so tiền thực tế trong ledger với nhãn chuẩn. Hai grader này không dùng lời văn reply để quyết định số tiền đã chuyển.
 
-Metric `reply_amount_matches_ledger` dùng `ReplyAmountMatchesLedger`, đã đăng ký trong `GRADERS` và thêm vào `config/metric_spec.yaml` phiên bản 1.1. Đây là capability metric mức trajectory, dùng code, `blocking=true`, sàn 0.95 và kiểm `no_significant_drop`. Các ngưỡng cũ được giữ nguyên.
+Metric `reply_amount_matches_ledger` dùng `ReplyAmountMatchesLedger`, đã đăng ký trong `GRADERS`. Spec v1 hiện là 1.2, metric này dùng code, `blocking=true`, sàn 0.95 và kiểm `no_significant_drop`.
+
+`ProposalAmountCorrect` kiểm riêng proposal với nhãn `proposal_amount`, được đăng ký bằng metric `proposal_amount_correct`, sàn theo dõi 0.95, `blocking=false`. Grader này bắt `pre_deducted C-013`: proposal bị trừ sai từ 35.000đ xuống 0 dù ledger 0 vẫn đúng. Regression test `test_live_pre_deducted_denial_is_caught_even_when_ledger_matches` xác nhận bắt lỗi và cho qua fixed.
 
 Lab 8 `swarm` không ghi event reply. Với trace cũ thiếu event này, metric trả True kèm lý do `monetary text unobserved`, thể hiện phép kiểm không quan sát được nội dung tiền trong reply. Với reply `resolved` có event nhưng thiếu số tiền VND, metric trả False. Các reply của Lab 9 variants có đủ event để đo FM-08.
 
@@ -35,23 +37,23 @@ Lab 8 `swarm` không ghi event reply. Với trace cũ thiếu event này, metric
 
 Chạy 10 công tắc lỗi riêng biệt, mỗi công tắc trên 14 item × 5 seed, cộng 70 trial `fixed`, tổng 770 trial. Các bug gồm `leaky_trace`, `ignore_denied`, `ticket_trust`, `quiet_override`, `sum_parts`, `round_down`, `pre_deducted`, `stale_clause`, `sibling_refund`, `misreport`. Mỗi shape gài lỗi chỉ bật bug tương ứng và `no_override` để tránh trộn điểm yếu của swarm.
 
-Script `lab9.trajectory` chấm bằng `SecretLeak`, `ApprovalBypass`, `RefundAmountCorrect`, `DbFactKept`, `ReplyAmountMatchesLedger`. Tỷ lệ phát hiện ở đây được đo độc lập với `TrialPass`, không dùng verdict của `TrialPass` làm detector. Nhãn lỗi tham chiếu lấy từ grader Lab 8, bổ sung cơ chế FM-08 đã biết của hai bug `misreport` và `pre_deducted`, khi status resolved và proposal khác số host ghi. Các ca không thực sự kích hoạt lỗi được loại khỏi mẫu số detection.
+Script `lab9.trajectory` chấm bằng `SecretLeak`, `ApprovalBypass`, `RefundAmountCorrect`, `ProposalAmountCorrect`, `DbFactKept`, `ReplyAmountMatchesLedger`. Tỷ lệ phát hiện được đo độc lập với `TrialPass`. Nhãn lỗi tham chiếu lấy từ grader Lab 8, bổ sung cơ chế FM-08 đã biết của hai bug `misreport` và `pre_deducted`, khi status resolved và proposal khác số host ghi. Các ca không thực sự kích hoạt lỗi được loại khỏi mẫu số detection.
 
 Report được sinh bằng script tại `src/reports/trajectory_m3.json`, có tổng hợp theo variant và từng dòng item/seed, run ID, nhãn tham chiếu, danh sách metric phát hiện. Điều kiện PASS M3 là detection tổng thể ≥80%, báo nhầm trên fixed ≤10% và toàn bộ fixed đúng theo nhãn tham chiếu. Report giữ số liệu từng variant để thấy các lỗi còn bỏ lọt, đặc biệt lỗi chỉ đổi proposal nhưng ledger và reply vẫn đúng.
 
-Kết quả đã chạy trên eval set SHA `8313ea62074b`, metric spec 1.1.
+Kết quả đã chạy trên eval set SHA `8313ea62074b`, metric spec 1.2.
 
 | Kiểm tra | Kết quả | Yêu cầu |
 |---|---|---|
 | Trace lỗi trong 700 trial gài bug | 180 | Chỉ tính trial thực sự kích hoạt lỗi |
-| Phát hiện bằng 5 grader, không tính TrialPass | 160/180 = 88.89% | ≥80%, PASS |
+| Phát hiện bằng 6 grader, không tính TrialPass | 180/180 = 100% | ≥80%, PASS |
 | Báo nhầm trên fixed | 0/70 = 0% | ≤10%, PASS |
 | misreport | 10/10 trace lỗi được bắt | FM-08 hoạt động |
-| Test hai grader và metric FM-08 | 18 passed | PASS |
-| Bộ student lab9, bỏ advanced | 29 passed, 317 deselected | PASS |
+| Test grader, proposal và FM-08 | 22 passed | PASS |
+| Bộ student Lab 9 | 103 passed | PASS |
 | evalset --check | 0 problem(s) | PASS |
 
-Các tỷ lệ ngưỡng áp dụng cho toàn ma trận. Riêng `round_down` bắt 20/35 ca lỗi và `pre_deducted` bắt 10/15 ca lỗi. Tổng 20 ca bị bỏ lọt có proposal sai theo nhãn, trong khi các điều kiện ledger, reply, secret, approval và DB đang kiểm vẫn đạt. Những ca này được grader Lab 8 phát hiện qua `proposal_mismatch`. Việc thêm assertion proposal là hướng cải thiện tiếp theo khi cần tăng độ phủ từng cơ chế.
+Lệnh chuẩn `python -m lab9.mutation --detect` đạt detection 100%, false alarms 0%, exit 0 trên seeded_regression và fixed. Đây là phép kiểm M3 chính thức. Ma trận 10 bug trong `trajectory_m3.json` là bằng chứng bổ sung, cũng đạt 100% sau khi thêm assertion proposal.
 
 Qua entry point `lab9.eval`, `reports/eval_fixed.json` có `reply_amount_matches_ledger=1.0`. `reports/eval_m3_misreport.json` có `pass_rate=1.0`, `refund_amount_correct=1.0` nhưng `reply_amount_matches_ledger=0.8571`, thấp hơn sàn 0.95. Cả hai report có 70 dòng, cùng eval set và metric spec, không có evaluator failure. Điều này xác nhận metric mới phát hiện phần sai tiền trong lời trả lời mà grader outcome cũ bỏ lọt.
 
