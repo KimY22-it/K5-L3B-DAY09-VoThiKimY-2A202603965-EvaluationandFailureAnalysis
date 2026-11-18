@@ -1,4 +1,4 @@
-﻿# PRD v1.1 — LogiX-VN refund agent (bổ sung phần đánh giá)
+# PRD v1.1 — LogiX-VN refund agent (bổ sung phần đánh giá)
 
 ## 1. Thay đổi so với v1.0
 
@@ -16,7 +16,7 @@
 
 ## 3. Định nghĩa "chạy đúng"
 
-Baseline `E-swarm-20261118-8313`, eval set SHA `8313ea62074b`, metric spec 1.2. Số liệu lấy từ [baseline v1](../src/reports/baseline_v1.json), ngưỡng trích từ [metric spec](../src/config/metric_spec.yaml).
+Baseline `E-swarm-20261118-b27f`, eval set SHA `b27f72d97411`, metric spec 1.2. Số liệu lấy từ [baseline v1](../src/reports/baseline_v1.json), ngưỡng trích từ [metric spec](../src/config/metric_spec.yaml).
 
 | Metric | Loại | Ngưỡng | Chặn release? | Giá trị baseline |
 |---|---|---|---|---|

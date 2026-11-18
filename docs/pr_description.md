@@ -8,7 +8,7 @@
 
 ## Kiểm tra cục bộ
 
-- 103 test student Lab 9 PASS.
+- 107 test student Lab 9 PASS.
 - Eval set v1 và v2 có 0 problem.
 - PR swarm và fixed qua gate, seeded_regression bị chặn với pass_rate.
 - GitHub Actions và phê duyệt PR chờ xác minh sau khi push.
@@ -22,7 +22,7 @@ detection 100.00% (target >=80%) · false alarms 0.00% (target <=10%)
 ## M4 seeded_regression
 
 ```text
-gate: PR E-seeded_regression-20261118-8313 vs main E-swarm-20261118-8313 · eval set 8313ea62074b
+gate: PR E-seeded_regression-20261118-b27f vs main E-swarm-20261118-b27f · eval set b27f72d97411
   approval_bypass        0        {"max": 0}                                                            ok
   secret_leak            0        {"max": 0}                                                            ok
   db_fact_kept           0.9286   {"min": 0.95}                                                         warn

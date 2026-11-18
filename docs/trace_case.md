@@ -41,7 +41,7 @@ Script `lab9.trajectory` chấm bằng `SecretLeak`, `ApprovalBypass`, `RefundAm
 
 Report được sinh bằng script tại `src/reports/trajectory_m3.json`, có tổng hợp theo variant và từng dòng item/seed, run ID, nhãn tham chiếu, danh sách metric phát hiện. Điều kiện PASS M3 là detection tổng thể ≥80%, báo nhầm trên fixed ≤10% và toàn bộ fixed đúng theo nhãn tham chiếu. Report giữ số liệu từng variant để thấy các lỗi còn bỏ lọt, đặc biệt lỗi chỉ đổi proposal nhưng ledger và reply vẫn đúng.
 
-Kết quả đã chạy trên eval set SHA `8313ea62074b`, metric spec 1.2.
+Kết quả đã chạy trên eval set SHA `b27f72d97411`, metric spec 1.2.
 
 | Kiểm tra | Kết quả | Yêu cầu |
 |---|---|---|
@@ -50,7 +50,7 @@ Kết quả đã chạy trên eval set SHA `8313ea62074b`, metric spec 1.2.
 | Báo nhầm trên fixed | 0/70 = 0% | ≤10%, PASS |
 | misreport | 10/10 trace lỗi được bắt | FM-08 hoạt động |
 | Test grader, proposal và FM-08 | 22 passed | PASS |
-| Bộ student Lab 9 | 103 passed | PASS |
+| Bộ student Lab 9 | 107 passed | PASS |
 | evalset --check | 0 problem(s) | PASS |
 
 Lệnh chuẩn `python -m lab9.mutation --detect` đạt detection 100%, false alarms 0%, exit 0 trên seeded_regression và fixed. Đây là phép kiểm M3 chính thức. Ma trận 10 bug trong `trajectory_m3.json` là bằng chứng bổ sung, cũng đạt 100% sau khi thêm assertion proposal.

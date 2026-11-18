@@ -1,16 +1,16 @@
-﻿# Eval card — LogiX-VN refund agent
+# Eval card — LogiX-VN refund agent
 
 ## Run ID / eval set SHA
 
-Baseline `E-swarm-20261118-8313`, eval set SHA `8313ea62074b`. Report được sinh bằng `lab9.eval`. [Baseline](../src/reports/baseline_v1.json)
+Baseline `E-swarm-20261118-b27f`, eval set SHA `b27f72d97411`. Report được sinh bằng `lab9.eval`. [Baseline](../src/reports/baseline_v1.json)
 
-Baseline v2 `E-swarm-20261118-2fea`, eval set SHA `2fea990d9db6`, dùng cho M5–M7. [Baseline v2](../src/reports/baseline_v2.json)
+Baseline v2 `E-swarm-20261118-b434`, eval set SHA `b434d722df7c`, dùng cho M5–M7. [Baseline v2](../src/reports/baseline_v2.json)
 
 Mô tả PR đã chuẩn bị từ output kiểm tra thực tế. [Nội dung để dán vào PR](pr_description.md)
 
 ## Phiên bản
 
-M1–M7 đã commit đến `310e6bb`. Bản hoàn thiện nộp bài là working tree trên commit này, bao gồm grader proposal bổ sung, spec v1 phiên bản 1.2 và spec v2 phiên bản 2.2. Bộ seed chính là `[11, 22, 33, 44, 55]`.
+M1–M7 và phần hoàn thiện đã commit đến `50e3dfd`. Bản sửa hash LF/CRLF là working tree trên commit này, bao gồm grader proposal bổ sung, spec v1 phiên bản 1.2 và spec v2 phiên bản 2.2. Bộ seed chính là `[11, 22, 33, 44, 55]`.
 
 ## Eval set
 
@@ -57,9 +57,9 @@ Cả ba shape dùng chung metric spec 1.2 và baseline `swarm`. Paired bootstrap
 
 | Shape | Run ID | pass_rate | Δ so baseline | CI 95% | Gate exit |
 |---|---|---|---|---|---|
-| PR swarm | `E-swarm-20261118-8313` | 0.9857 | 0.000 | [0.000, 0.000] | 0 |
-| fixed | `E-fixed-20261118-8313` | 1.0000 | +0.014 | [0.000, +0.043] | 0 |
-| seeded_regression | `E-seeded_regression-20261118-8313` | 0.7143 | −0.271 | [−0.500, −0.057] | 1 |
+| PR swarm | `E-swarm-20261118-b27f` | 0.9857 | 0.000 | [0.000, 0.000] | 0 |
+| fixed | `E-fixed-20261118-b27f` | 1.0000 | +0.014 | [0.000, +0.043] | 0 |
+| seeded_regression | `E-seeded_regression-20261118-b27f` | 0.7143 | −0.271 | [−0.500, −0.057] | 1 |
 
 Với `seeded_regression`, Δ=−0.271428571, CI=[−0.500000000, −0.057142857]. Sai số lớn nhất so với tham chiếu đề bài là 0.000428571 ≤ 0.01. Gate ghi `exit 1 — blocked: refund_amount_correct, pass_rate, reply_amount_matches_ledger`. [PR swarm](../src/reports/eval_pr.json), [fixed](../src/reports/eval_fixed.json), [seeded_regression](../src/reports/eval_seeded_regression.json)
 
@@ -67,7 +67,7 @@ Các bước workflow được kiểm tra cục bộ gồm smoke PASS, test stud
 
 ### M5 — Eval set v2 và slice
 
-Report `E-slice_regression-20261118-2fea` được so với baseline v2 `swarm`. Các slice được gắn từ nhãn chuẩn và nguồn item, kết quả tính trung bình theo item rồi so CI ghép cặp cùng item.
+Report `E-slice_regression-20261118-b434` được so với baseline v2 `swarm`. Các slice được gắn từ nhãn chuẩn và nguồn item, kết quả tính trung bình theo item rồi so CI ghép cặp cùng item.
 
 | Phạm vi | Baseline | slice_regression | Δ | CI 95% | Kết quả |
 |---|---|---|---|---|---|
@@ -136,7 +136,7 @@ Mutation scorecard đã chạy qua entry point `lab9.mutation`.
 
 Kết quả `mutation score 3/3`, `false alarms 0`. Baseline so với chính nó vẫn exit 0, PR swarm v1 vẫn exit 0.
 
-Kiểm tra sau khi hoàn thiện đạt 103 test student Lab 9 PASS, eval set v1 và v2 đều có 0 problem. Cả 4 file trap được kiểm qua CLI và đều exit 1 với INTEGRITY.
+Kiểm tra sau khi hoàn thiện đạt 107 test student Lab 9 PASS, eval set v1 và v2 đều có 0 problem. Cả 4 file trap được kiểm qua CLI và đều exit 1 với INTEGRITY.
 
 Hai trap ẩn gợi ý đã có test hồi quy. Dòng trùng bị phát hiện bằng số lần xuất hiện của từng cặp `(item_id, seed)`, kể cả khi người sửa report tăng số item trong manifest để khớp số dòng. `evaluator_failures` khác rỗng luôn bị chặn dù mọi metric đều xanh.
 
