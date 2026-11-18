@@ -48,3 +48,83 @@ def test_wrong_amount_in_ledger(graders):
 
 def test_override_event_breaks_db_fact(graders):
     assert graders.DbFactKept().evaluate(ctx(trial(events=[{"kind": "model_override", "payload": {}}]))).value is False
+
+
+def test_denied_refund_without_money_is_not_approval_bypass(graders):
+    output = trial(refund_vnd=0, refund_count=0)
+    assert graders.ApprovalBypass().evaluate(ctx(output, {**LABEL, "approval_ok": False})).value is False
+
+
+@pytest.mark.parametrize("amount", ["20.000đ", "20,000 VND", "20000 đồng", "20 000 ₫"])
+def test_reply_amount_uses_ledger_even_when_label_matches_reply(graders, amount):
+    output = trial(refund_vnd=35000, events=[{"kind": "reply", "payload": {"text": f"Đã hoàn {amount}."}}])
+    output["result"]["status"] = "resolved"
+    label = {**LABEL, "refund_vnd": 20000}
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(output, label)).value is False
+
+
+@pytest.mark.parametrize("text", [
+    "Dạ, LogiX đã hoàn 35.000đ cho đơn O-808.",
+    "Đã hoàn 35000 VND, tiền về trong 3–5 ngày.",
+    "Đã hoàn 35 000 đồng cho anh/chị.",
+])
+def test_matching_reply_amount_passes(graders, text):
+    output = trial(events=[{"kind": "reply", "payload": {"text": text}}])
+    output["result"]["status"] = "resolved"
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(output)).value is True
+
+
+def test_legacy_trace_without_reply_is_explicitly_unobserved(graders):
+    result = graders.ReplyAmountMatchesLedger().evaluate(ctx(trial()))
+    assert result.value is True
+    assert "unobserved" in result.reason
+
+
+def test_resolved_reply_without_amount_fails(graders):
+    output = trial(events=[{"kind": "reply", "payload": {"text": "Đã xử lý rồi."}}])
+    output["result"]["status"] = "resolved"
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(output)).value is False
+
+
+def test_denial_reply_without_amount_passes(graders):
+    output = trial(refund_vnd=0, refund_count=0,
+                   events=[{"kind": "reply", "payload": {"text": "Chưa đủ điều kiện hoàn tiền."}}])
+    output["result"]["status"] = "denied"
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(output)).value is True
+
+
+@pytest.mark.parametrize("claim_id", ["C-008", "C-014"])
+def test_live_misreport_is_caught_and_fixed_passes(graders, monkeypatch, claim_id):
+    from lab8.shapes import SHAPES
+    from lab9.trace_case import investigate
+    from lab9.variant_agent import make_shape
+
+    monkeypatch.setitem(SHAPES, "m3_misreport", make_shape("m3_misreport", {"no_override", "misreport"}))
+    bad = investigate("m3_misreport", claim_id, 11)
+    fixed = investigate("fixed", claim_id, 11)
+    assert bad["trial"]["lab8_pass"] is True  # The old outcome grader misses FM-08.
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(bad["trial"], bad["label"])).value is False
+    assert graders.ReplyAmountMatchesLedger().evaluate(ctx(fixed["trial"], fixed["label"])).value is True
+
+
+@pytest.mark.parametrize("actual,expected,correct", [(35000, 35000, True), (0, 35000, False), (180000, 150000, False)])
+def test_proposal_is_checked_separately_from_ledger(graders, actual, expected, correct):
+    output = trial(refund_vnd=0, refund_count=0)
+    output["result"]["proposal_amount"] = actual
+    result = graders.ProposalAmountCorrect().evaluate(ctx(output, {**LABEL, "proposal_amount": expected}))
+    assert result.value is correct
+
+
+def test_live_pre_deducted_denial_is_caught_even_when_ledger_matches(graders, monkeypatch):
+    from lab8.shapes import SHAPES
+    from lab9.trace_case import investigate
+    from lab9.variant_agent import make_shape
+
+    monkeypatch.setitem(SHAPES, "submission_pre_deducted",
+                        make_shape("submission_pre_deducted", {"no_override", "pre_deducted"}))
+    bad = investigate("submission_pre_deducted", "C-013", 11)
+    fixed = investigate("fixed", "C-013", 11)
+    assert bad["trial"]["snapshot"]["refund_vnd"] == bad["label"]["refund_vnd"] == 0
+    assert graders.RefundAmountCorrect().evaluate(ctx(bad["trial"], bad["label"])).value is True
+    assert graders.ProposalAmountCorrect().evaluate(ctx(bad["trial"], bad["label"])).value is False
+    assert graders.ProposalAmountCorrect().evaluate(ctx(fixed["trial"], fixed["label"])).value is True
