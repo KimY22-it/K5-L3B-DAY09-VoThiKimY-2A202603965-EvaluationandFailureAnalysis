@@ -10,7 +10,8 @@ pytestmark = pytest.mark.student
 def report(rates):
     rows = [{"item_id": f"E-{item}", "seed": seed, "pass_rate": seed < round(rate * 10)}
             for item, rate in enumerate(rates) for seed in range(10)]
-    return {"manifest": {"eval_set_sha": "same-set"}, "rows": rows,
+    return {"manifest": {"eval_set_sha": "same-set", "items": len(rates), "seeds": list(range(10))},
+            "rows": rows, "evaluator_failures": [],
             "metrics": {"pass_rate": sum(row["pass_rate"] for row in rows) / len(rows)}}
 
 

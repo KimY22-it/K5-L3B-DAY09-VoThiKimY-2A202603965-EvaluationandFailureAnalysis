@@ -8,7 +8,7 @@ Baseline v2 `E-swarm-20261118-2fea`, eval set SHA `2fea990d9db6`, dùng cho M5�
 
 ## Phiên bản
 
-M4 đã commit tại `41ba27b`, grader tại commit `90e6db4`, eval set v1 dùng metric spec 1.1. M5 đã commit tại `1e6482b`. M6 là working tree trên `1e6482b`, eval set v2 dùng metric spec 2.1. Bộ seed chính là `[11, 22, 33, 44, 55]`.
+M4 đã commit tại `41ba27b`, grader tại commit `90e6db4`, eval set v1 dùng metric spec 1.1. M5 đã commit tại `1e6482b`, M6 tại `7241cfd`. M7 là working tree trên `7241cfd`, eval set v2 dùng metric spec 2.1. Bộ seed chính là `[11, 22, 33, 44, 55]`.
 
 ## Eval set
 
@@ -110,6 +110,45 @@ Trên bộ seed chính, pass_rate cũng chặn qua CI. Trên bộ chẩn đoán,
 
 Gate đầy đủ trên bộ seed chính trả `exit 1 — blocked: pass_rate, pass_hat_5, slice:money_movement/pass_rate`. `fixed` và `honest_refactor` có `pass_hat_5=1.0`, gate exit 0. `slice_regression` vẫn chỉ bị chặn bởi `money_movement`. Bộ test student Lab 9, loại hai test integrity M7, có 71 test PASS; eval set v2 vẫn có 0 problem.
 
+### M7 — Chống gian lận eval
+
+`integrity_check` kiểm tra metric hữu hạn, số dòng và độ phủ item × seed, dòng trùng, giá trị grader bị thiếu, `evaluator_failures`, slice bị đổi và summary khác kết quả tính lại từ từng dòng. Ratchet so với `--base-spec` chặn hạ sàn, tăng trần, bỏ kiểm tra giảm có ý nghĩa, tắt blocking hoặc xóa metric/slice trên cùng eval-set version.
+
+| Trap trong `src/reports/traps/` | Gate exit | Lý do |
+|---|---|---|
+| `evaluator_errors_as_nan.json` | 1 | INTEGRITY, giá trị grader bị thiếu hoặc không hữu hạn |
+| `dropped_failing_rows.json` | 1 | INTEGRITY, report bị mất dữ liệu hoặc aggregate không hợp lệ |
+| `cherry_picked_seeds.json` | 1 | INTEGRITY, report bị chọn seed và aggregate không hợp lệ |
+| `loosened_spec.json` | 1 | INTEGRITY ratchet, dùng `loosened_spec.spec.yaml` cùng `--base-spec` gốc |
+
+Mutation scorecard đã chạy qua entry point `lab9.mutation`.
+
+| Variant | Kết quả gate |
+|---|---|
+| fixed | merge |
+| honest_refactor | merge |
+| seeded_regression | block |
+| slice_regression | block |
+| flaky_regression | block |
+
+Kết quả `mutation score 3/3`, `false alarms 0`. Baseline so với chính nó vẫn exit 0, PR swarm v1 vẫn exit 0.
+
+Kiểm tra cuối M7 đạt 99 test student Lab 9 PASS, eval set v1 và v2 đều có 0 problem. Cả 4 file trap được kiểm lại qua CLI và đều exit 1 với INTEGRITY.
+
+Hai trap ẩn gợi ý đã có test hồi quy. Dòng trùng bị phát hiện bằng số lần xuất hiện của từng cặp `(item_id, seed)`, kể cả khi người sửa report tăng số item trong manifest để khớp số dòng. `evaluator_failures` khác rỗng luôn bị chặn dù mọi metric đều xanh.
+
+Trap có thể còn lọt là bịa đồng bộ verdict của các dòng rồi tính lại summary cho nhất quán, hoặc grader bị sửa thành luôn PASS. Gate cần nguồn kết quả từ evaluator đáng tin cậy để xác nhận nội dung verdict, ngoài các kiểm tra cấu trúc và tính nhất quán hiện tại.
+
+Lệnh tái hiện M7, chạy trong `src`.
+
+```powershell
+.\.venv\Scripts\python.exe -m lab9.traps --pr reports/eval_slice_regression.json --baseline reports/baseline_v2.json --spec config/metric_spec_v2.yaml
+.\.venv\Scripts\python.exe -m lab9.mutation --spec config/metric_spec_v2.yaml --baseline reports/baseline_v2.json
+.\.venv\Scripts\python.exe -m pytest -q -m student -o addopts= -k lab9
+```
+
+`lab9.traps` trả exit 0 khi mọi trap đều bị chặn, còn gate chạy trên từng trap phải trả exit 1 với lý do INTEGRITY. Các file trap do script sinh được giữ trong `src/reports/traps/`.
+
 ## Judge
 
 Tone đạt κ=0.757, precision=0.857, recall=0.800. Helpful bị loại khỏi gate vì κ=0.375 và recall=0.300 dưới sàn, bỏ lọt 21/30 lỗi. Gate M4 hiện dùng code graders. [Judge audit](judge_audit.md)
@@ -130,7 +169,7 @@ Chưa chỉ định người phụ trách. Cần điền người chịu trách 
 
 MockLLM và 14 item chưa đại diện dữ liệu người dùng thật. Judge dùng replay công khai, chưa có tập held-out độc lập. Trace swarm cũ thiếu event reply nên metric FM-08 chưa quan sát được nội dung reply trên shape này. Các bước workflow đã qua cục bộ, trạng thái GitHub Actions sau commit/push và mở PR chưa được xác minh.
 
-M5–M6 dùng 28 item công khai và adversarial. Các metric `pass_at_k`/`pass_hat_k` đã có giá trị số trong report v2. Bug chập chờn xuất hiện ở 1/5 seed của bộ chính, tỷ lệ kích hoạt có thể khác ở bộ seed khác. Phần kiểm tra integrity thuộc M7 còn chưa triển khai.
+M5–M7 dùng 28 item công khai và adversarial. Các metric `pass_at_k`/`pass_hat_k` đã có giá trị số trong report v2. Bug chập chờn xuất hiện ở 1/5 seed của bộ chính, tỷ lệ kích hoạt có thể khác ở bộ seed khác. M7 đã kiểm tra trap công khai và các trap hồi quy bổ sung, bộ chấm ẩn của giảng viên chưa được chạy.
 
 ## Khi nào tăng eval-set version
 
