@@ -4,11 +4,11 @@
 
 Baseline `E-swarm-20261118-8313`, eval set SHA `8313ea62074b`. Report được sinh bằng `lab9.eval`. [Baseline](../src/reports/baseline_v1.json)
 
-Baseline v2 `E-swarm-20261118-2fea`, eval set SHA `2fea990d9db6`, dùng cho M5. [Baseline v2](../src/reports/baseline_v2.json)
+Baseline v2 `E-swarm-20261118-2fea`, eval set SHA `2fea990d9db6`, dùng cho M5–M6. [Baseline v2](../src/reports/baseline_v2.json)
 
 ## Phiên bản
 
-M4 đã commit tại `41ba27b`, grader tại commit `90e6db4`, eval set v1 dùng metric spec 1.1. M5 là working tree trên `41ba27b`, eval set v2 dùng metric spec 2.0. Cả hai dùng seeds `[11, 22, 33, 44, 55]`.
+M4 đã commit tại `41ba27b`, grader tại commit `90e6db4`, eval set v1 dùng metric spec 1.1. M5 đã commit tại `1e6482b`. M6 là working tree trên `1e6482b`, eval set v2 dùng metric spec 2.1. Bộ seed chính là `[11, 22, 33, 44, 55]`.
 
 ## Eval set
 
@@ -46,6 +46,8 @@ Giảm có ý nghĩa được xác định khi CI 95% của Δ (PR − baseline)
 
 Trong spec v2, sàn `pass_rate` tổng thể là 0.85 và sàn `refund_amount_correct` là 0.90. Metric FM-08 được giữ với sàn 0.95. Các slice `money_movement`, `adversarial`, `denial` đều dùng `pass_rate`, sàn 0.90, `no_significant_drop=true`, `blocking=true`. [Metric spec v2](../src/config/metric_spec_v2.yaml)
 
+M6 bổ sung `pass_hat_5`, dùng `lab9.stats.pass_hat_k`, `blocking=true`, sàn 0.80. Sàn được chọn sau A/A, thấp hơn dải giá trị `pass_hat_5` quan sát `[0.8929, 0.8929]` với khoảng cách 0.0929. Metric spec tăng từ 2.0 lên 2.1, các report v2 được sinh lại cùng spec 2.1.
+
 ## Kết quả baseline vs PR
 
 Cả ba shape dùng chung metric spec 1.1 và baseline `swarm`. Paired bootstrap thực hiện trên trung bình từng item qua 5 seed, 1.000 resample, percentile, RNG 2027, confidence 95%.
@@ -75,6 +77,39 @@ Gate trả đúng `exit 1 — blocked: slice:money_movement/pass_rate`. Khi bỏ
 
 Hai đối chứng `fixed` và `honest_refactor` trên v2 đều có `pass_rate=1.0`, gate exit 0. Mỗi report v2 có 140 dòng và 0 evaluator failure. Bộ test student Lab 9 bỏ advanced có 38 test PASS, test slice công khai trong bộ advanced PASS. [Fixed v2](../src/reports/eval_fixed_v2.json), [Honest refactor v2](../src/reports/eval_honest_refactor_v2.json)
 
+### M6 — Nhiễu và pass_hat_5
+
+`pass_at_k(n,c,k) = 1 − C(n−c,k)/C(n,k)` đo khả năng có ít nhất một lần PASS. `pass_hat_k(n,c,k) = C(c,k)/C(n,k)` đo khả năng cả k lần đều PASS. Hai hàm từ chối số đếm không nguyên hoặc vi phạm `0 ≤ c ≤ n`, `1 ≤ k ≤ n`. Với một item có 4/5 lần PASS, `pass_at_5=1` nhưng `pass_hat_5=0`.
+
+A/A chạy cùng `swarm` trên hai bộ seed `[11,22,33,44,55]` và `[66,77,88,99,110]` bằng lệnh sau, thực hiện trong `src`.
+
+```powershell
+.\.venv\Scripts\python.exe -m lab9.mutation --spec config/metric_spec_v2.yaml --aa 66,77,88,99,110
+```
+
+| Metric | Bộ seed chính | Bộ seed A/A | Δ |
+|---|---|---|---|
+| pass_rate | 0.9786 | 0.9786 | 0 |
+| pass_at_5 | 1.0000 | 1.0000 | 0 |
+| pass_hat_5 | 0.8929 | 0.8929 | 0 |
+
+Cả 14 metric số đều có Δ=0 trên MockLLM. Hai report lưu riêng, phân biệt bằng bộ seed trong manifest. [Baseline](../src/reports/baseline_v2.json), [A/A](../src/reports/aa_swarm_v2.json)
+
+Với LLM thật, việc lấy mẫu phản hồi và biến thiên thực thi có thể làm các lần chạy cùng phiên bản cho kết quả khác nhau. Cỡ mẫu hữu hạn khiến metric dao động, nên dải nhiễu thực tế thường rộng hơn 0. Cần chạy A/A lặp lại để ước lượng dải đó. Với metric càng cao càng tốt, sàn min phải thấp hơn cận dưới của dải chạy lành mạnh và có khoảng đệm, để dao động thông thường không gây BLOCK. Dải MockLLM bằng 0 ở đây chưa xác nhận được dải nhiễu của LLM thật.
+
+`flaky_regression` kích hoạt bug ở seed 33 trong bộ seed chính. Có 12/28 item lỗi đúng 1/5 seed, `pass_rate=128/140=0.9143` vẫn trên sàn 0.85, nhưng `pass_hat_5=16/28=0.5714` dưới sàn 0.80. [Report flaky](../src/reports/eval_flaky_regression.json)
+
+Để kiểm chứng độ nhạy theo seed, bổ sung một bộ seed chẩn đoán tự chọn `[10,11,20,22,33]`, đánh giá `swarm` và `flaky_regression` cùng bộ seed đó. Các phép kiểm từng metric dùng bản sao spec trong bộ nhớ, giữ ngưỡng và bootstrap, cấu hình chính tiếp tục dùng bộ seed mặc định.
+
+| Bộ seed | pass_rate flaky | Δ so swarm cùng seed | CI 95% | Gate chỉ pass_rate | pass_hat_5 flaky | Gate chỉ pass_hat_5 |
+|---|---|---|---|---|---|---|
+| Chính `[11,22,33,44,55]` | 0.9143 | −0.064 | [−0.114, −0.014] | BLOCK do CI | 0.5714 | BLOCK |
+| Chẩn đoán `[10,11,20,22,33]` | 0.9143 | −0.043 | [−0.100, +0.029] | PASS | 0.5714 | BLOCK |
+
+Trên bộ seed chính, pass_rate cũng chặn qua CI. Trên bộ chẩn đoán, pass_rate cho qua còn pass_hat_5 tiếp tục chặn. Kết quả này minh họa khả năng chặn của metric trung bình phụ thuộc bộ seed. [Đối chứng chẩn đoán](../src/reports/m6_seed_panel_baseline.json), [Flaky chẩn đoán](../src/reports/m6_seed_panel_flaky.json)
+
+Gate đầy đủ trên bộ seed chính trả `exit 1 — blocked: pass_rate, pass_hat_5, slice:money_movement/pass_rate`. `fixed` và `honest_refactor` có `pass_hat_5=1.0`, gate exit 0. `slice_regression` vẫn chỉ bị chặn bởi `money_movement`. Bộ test student Lab 9, loại hai test integrity M7, có 71 test PASS; eval set v2 vẫn có 0 problem.
+
 ## Judge
 
 Tone đạt κ=0.757, precision=0.857, recall=0.800. Helpful bị loại khỏi gate vì κ=0.375 và recall=0.300 dưới sàn, bỏ lọt 21/30 lỗi. Gate M4 hiện dùng code graders. [Judge audit](judge_audit.md)
@@ -89,13 +124,13 @@ Chưa chỉ định người phụ trách. Cần điền người chịu trách 
 
 ## Phạm vi pilot
 
-Đánh giá offline agent hoàn tiền LogiX-VN trên 14 claim công khai bằng MockLLM, với các shape `swarm`, `fixed`, `seeded_regression`.
+Đánh giá offline agent hoàn tiền LogiX-VN bằng MockLLM trên eval set v1 có 14 claim và v2 có 28 claim. Các đối chứng và biến thể dùng để kiểm định gate.
 
 ## Giới hạn / bằng chứng còn thiếu
 
 MockLLM và 14 item chưa đại diện dữ liệu người dùng thật. Judge dùng replay công khai, chưa có tập held-out độc lập. Trace swarm cũ thiếu event reply nên metric FM-08 chưa quan sát được nội dung reply trên shape này. Các bước workflow đã qua cục bộ, trạng thái GitHub Actions sau commit/push và mở PR chưa được xác minh.
 
-M5 dùng 28 item công khai và adversarial. Các metric `pass_at_k`/`pass_hat_k` còn để null trong report v2 vì thuộc M6, chưa được dùng làm điều kiện gate M5. Phần kiểm tra integrity thuộc M7 còn chưa triển khai.
+M5–M6 dùng 28 item công khai và adversarial. Các metric `pass_at_k`/`pass_hat_k` đã có giá trị số trong report v2. Bug chập chờn xuất hiện ở 1/5 seed của bộ chính, tỷ lệ kích hoạt có thể khác ở bộ seed khác. Phần kiểm tra integrity thuộc M7 còn chưa triển khai.
 
 ## Khi nào tăng eval-set version
 
